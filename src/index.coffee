@@ -1,6 +1,5 @@
 
 fs = require 'fs-extra'
-grs = require 'grs'
 path = require 'path'
 async = require 'async'
 Promise = require 'bluebird'
@@ -19,6 +18,7 @@ ProgressBar = require 'progress'
 File = require 'vinyl'
 plist = require 'plist'
 rcedit = require 'rcedit'
+request = require 'request'
 
 
 PLUGIN_NAME = 'gulp-electron'
@@ -275,10 +275,7 @@ download = (cacheFile, cachePath, version, cacheZip) ->
     fs.mkdirsSync cachePath
     # Download electron package throw stream.
     bar = null
-    grs
-      repo: 'atom/electron'
-      tag: version
-      name: cacheZip
+    request "https://github.com/atom/electron/releases/download/#{version}/#{cacheZip}"
     .on 'error', (error) ->
       throw new PluginError PLUGIN_NAME, error
     .on 'size', (size) ->
@@ -288,7 +285,7 @@ download = (cacheFile, cachePath, version, cacheZip) ->
         width: 20
         total: size
     .pipe through (chunk, enc, cb) ->
-      bar.tick chunk.length
+      if bar? then bar.tick chunk.length
       @push(chunk)
       cb()
     .pipe(fs.createWriteStream(cacheFile))
